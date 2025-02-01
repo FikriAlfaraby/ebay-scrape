@@ -35,7 +35,7 @@ const scrapeEbayProducts = async (req, res) => {
     for (const product of allProducts) {
       try {
         const description = await scrapeProductDescription(product.link);
-        product.description = description || "-";
+        product.description = description;
       } catch (error) {
         reqLogger.error(`Failed to scrape description`, {
           error: error.message,
