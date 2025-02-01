@@ -32,32 +32,32 @@ const scrapeEbayProducts = async (req, res) => {
       allProducts.push(...products.slice(0, remainingSlots));
     }
 
-    for (const product of allProducts) {
-      try {
-        const description = await scrapeProductDescription(product.link);
-        product.description = description;
-      } catch (error) {
-        reqLogger.error(`Failed to scrape description`, {
-          error: error.message,
-          productLink: product.link,
-          errorCode: errorCodes.SCRAPING_ERROR,
-        });
-        product.description = "-";
-        failedScrapeDescription++;
-      }
+    await Promise.all(
+      allProducts.map(async (product) => {
+        try {
+          product.description = await scrapeProductDescription(product.link);
+        } catch (error) {
+          reqLogger.error(`Failed to scrape description`, {
+            error: error.message,
+            productLink: product.link,
+            errorCode: errorCodes.SCRAPING_ERROR,
+          });
+          product.description = "-";
+          failedScrapeDescription++;
+        }
 
-      try {
-        const summaryAI = await summarizeWithDeepseek(product);
-        product.summaryAI = summaryAI;
-      } catch (error) {
-        reqLogger.error(`Failed to summary product info`, {
-          error: error.message,
-          productName: product.name,
-          errorCode: errorCodes.API_ERROR,
-        });
-        failedSummaryCount++;
-      }
-    }
+        try {
+          product.summaryAI = await summarizeWithDeepseek(product);
+        } catch (error) {
+          reqLogger.error(`Failed to summary product info`, {
+            error: error.message,
+            productName: product.name,
+            errorCode: errorCodes.API_ERROR,
+          });
+          failedSummaryCount++;
+        }
+      })
+    );
 
     res.json({
       data: allProducts,
@@ -67,7 +67,7 @@ const scrapeEbayProducts = async (req, res) => {
         failedSummaries: failedSummaryCount,
         query,
         pages,
-        limit,
+        limit: Number(limit),
       },
     });
   } catch (error) {
