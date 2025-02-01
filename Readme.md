@@ -24,13 +24,7 @@ A Node.js application for scraping eBay product data with AI-powered enhancement
    npm install
    ```
 
-3. Create a `.env` file:
-
-   ```bash
-   cp .env.example .env
-   ```
-
-4. **Configure LM Studio with Deepseek Model:**
+3. **Configure LM Studio with Deepseek Model:**
    
    - Download and install **[LM Studio](https://lmstudio.ai/)**
    - Open **LM Studio**, then search for model **deepseek-coder-v2-lite-instruct**
@@ -46,9 +40,7 @@ A Node.js application for scraping eBay product data with AI-powered enhancement
      }
      ```
 
-5. **Configure environment variables (see Configuration section)**
-
-6. **Start the server:**
+4. **Start the server:**
 
    ```bash
    npm run dev
