@@ -9,7 +9,10 @@ const scrapeEbayProducts = async (req, res) => {
   reqLogger.info("Starting eBay scraping request");
 
   try {
-    const { query = "nike", pages = 1, limit = 10 } = req.query;
+    const query = req.query.query || "nike";
+    const pages = Number(req.query.pages) || 1;
+    const limit = Number(req.query.limit) || 10;
+
     let failedScrapeDescription = 0;
     let failedSummaryCount = 0;
 
@@ -67,7 +70,7 @@ const scrapeEbayProducts = async (req, res) => {
         failedSummaries: failedSummaryCount,
         query,
         pages,
-        limit: Number(limit),
+        limit,
       },
     });
   } catch (error) {
