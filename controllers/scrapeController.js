@@ -1,6 +1,5 @@
 const config = require("../config/config");
 const { scrapeProductDescription } = require("../services/ebayScraperSevice");
-const { summarizeWithDeepseek } = require("../services/deepseekService");
 const { createRequestLogger, errorCodes } = require("../utils/logger");
 const { scrapeProductListing } = require("../services/ebayScraperSevice");
 
@@ -9,9 +8,11 @@ const scrapeEbayProducts = async (req, res) => {
   reqLogger.info("Starting eBay scraping request");
 
   try {
-    const { query = "nike", pages = 1, limit = 10 } = req.query;
+    const query = req.query.query || "nike";
+    const pages = Number(req.query.pages) || 1;
+    const limit = Number(req.query.limit) || 10;
+
     let failedScrapeDescription = 0;
-    let failedSummaryCount = 0;
 
     const allProducts = [];
 
@@ -26,14 +27,14 @@ const scrapeEbayProducts = async (req, res) => {
       ).replace("{page}", page);
       console.log(`Scraping page ${page}: ${url}`);
 
-      const products = await scrapeProductListing(url);
-
       const remainingSlots = limit - allProducts.length;
-      allProducts.push(...products.slice(0, remainingSlots));
+      const products = await scrapeProductListing(url, remainingSlots);
+
+      allProducts.push(...products);
     }
 
-    await Promise.all(
-      allProducts.map(async (product) => {
+    if (allProducts.length > 0) {
+      for (const product of allProducts) {
         try {
           product.description = await scrapeProductDescription(product.link);
         } catch (error) {
@@ -45,29 +46,17 @@ const scrapeEbayProducts = async (req, res) => {
           product.description = "-";
           failedScrapeDescription++;
         }
-
-        try {
-          product.summaryAI = await summarizeWithDeepseek(product);
-        } catch (error) {
-          reqLogger.error(`Failed to summary product info`, {
-            error: error.message,
-            productName: product.name,
-            errorCode: errorCodes.API_ERROR,
-          });
-          failedSummaryCount++;
-        }
-      })
-    );
+      }
+    }
 
     res.json({
       data: allProducts,
       meta: {
         totalProducts: allProducts.length,
         failedScrapesDescription: failedScrapeDescription,
-        failedSummaries: failedSummaryCount,
         query,
-        pages,
-        limit: Number(limit),
+        pages: pages,
+        limit: limit,
       },
     });
   } catch (error) {
